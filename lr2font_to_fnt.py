@@ -1,4 +1,5 @@
 import os
+from pathlib import Path
 import subprocess
 
 
@@ -12,10 +13,13 @@ def convert_glyph_id(glyph_id):
     return ord(glyph_id.decode('cp932'))
 
 
-def resize(thing, scale):
-    # TODO: change this to return integer values rather than strings
+def resize_old(thing, scale):
     thing = round(float(thing) * scale)
     return str(thing)
+
+
+def scale_value(value, scale):
+    return round(value * scale)
 
 
 def old_converter(fileName, scale):
@@ -43,13 +47,13 @@ def old_converter(fileName, scale):
     inputFile.close()
 
     # INFO
-    line = "info face=\"" + fontName + "\" size=" + resize(
+    line = "info face=\"" + fontName + "\" size=" + resize_old(
         listS[-1][1],
         scale) + " bold=0 italic=0 charset=\"\" unicode=0 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=0,0"
     output.append(line)
 
     # COMMON
-    line = "common lineHeight=" + resize(listS[-1][1], scale) + " base=" + resize(
+    line = "common lineHeight=" + resize_old(listS[-1][1], scale) + " base=" + resize_old(
         listS[-1][1], scale) + " scaleW=0 scaleH=0 pages=" + str(len(listT)) + " packed=0"
     output.append(line)
 
@@ -60,11 +64,11 @@ def old_converter(fileName, scale):
         output.append(line)
 
     # CHAR
-    spacing = int(resize(listM[-1][1], scale))
+    spacing = int(resize_old(listM[-1][1], scale))
     line = "chars count=" + str(len(listR))
     output.append(line)
     for item in listR:
-        line = "char id=" + str(convert_glyph_id(int(item[1]))) + " x=" + resize(item[3], scale) + " y=" + resize(item[4], scale) + " width=" + resize(item[5], scale) + " height=" + resize(item[6],scale) + " xoffset=0 yoffset=0 xadvance=" + str(int(resize(item[5], scale)) + spacing) + " page=" + item[2] + " chnl=0"
+        line = "char id=" + str(convert_glyph_id(int(item[1]))) + " x=" + resize_old(item[3], scale) + " y=" + resize_old(item[4], scale) + " width=" + resize_old(item[5], scale) + " height=" + resize_old(item[6], scale) + " xoffset=0 yoffset=0 xadvance=" + str(int(resize_old(item[5], scale)) + spacing) + " page=" + item[2] + " chnl=0"
         output.append(line)
 
     output.append("kernings count=0")
@@ -80,53 +84,55 @@ def old_converter(fileName, scale):
         print("ImageMagick not found. You'll have to convert the textures to .png yourself I guess...")
 
 
-def convert_lr2font_to_fnt(lr2font_filename, scale):
-    # LOAD LR2FONT AND SORT TAGS
-    input_file = open(os.path.expanduser(lr2font_filename), "r", errors="ignore")
-    list_s = []
-    list_m = []
-    list_t = []
-    list_r = []
-    output = []
-    font_name = lr2font_filename.replace(".lr2font", "")
+def load_lr2font(lr2font_filepath):
+    """Load .lr2font file and return info as dict"""
+    lr2font = {"#S": [], "#M": [], "#T": [], "#R": []}
+    with lr2font_filepath.open(errors="ignore") as input_file:
+        for line in input_file:
+            if line[0] != "#":
+                continue
+            record = line.strip().split(",")
+            if record[0] == "#S":  # S lines - define font size
+                lr2font["#S"].append({"size": record[1]})
+            elif record[0] == "#M":  # M lines - define font spacing
+                lr2font["#M"].append({"spacing": record[1]})
+            elif record[0] == "#T":  # T lines - define image files
+                lr2font["#T"].append({"img": record[1], "file": record[2]})
+            elif record[0] == "#R":  # R lines - define characters
+                lr2font["#R"].append({"char": record[1], "img": record[2], "x": record[3], "y": record[4], "w": record[5], "h": record[6]})
+    return lr2font
 
-    while True:
-        line = input_file.readline()
-        if not line:
-            break
-        if line[0:2] == "#S":
-            list_s.append(line.strip().split(","))
-        elif line[0:2] == "#M":
-            list_m.append(line.strip().split(","))
-        elif line[0:2] == "#T":
-            list_t.append(line.strip().split(","))
-        elif line[0:2] == "#R":
-            list_r.append(line.strip().split(","))
-    input_file.close()
+
+def convert_lr2font_to_fnt(filepath_string, scale):
+    """Convert .lr2font file to .fnt file"""
+    lr2font_filepath = Path(filepath_string)
+    lr2font = load_lr2font(lr2font_filepath)
+    output = []
+    font_name = lr2font_filepath.stem
 
     # INFO
-    line = "info face=\"" + font_name + "\" size=" + resize(
-        list_s[-1][1],
+    line = "info face=\"" + font_name + "\" size=" + resize_old(
+        lr2font["#S"][-1]["size"],
         scale) + " bold=0 italic=0 charset=\"\" unicode=0 stretchH=100 smooth=1 aa=1 padding=0,0,0,0 spacing=0,0"
     output.append(line)
 
     # COMMON
-    line = "common lineHeight=" + resize(list_s[-1][1], scale) + " base=" + resize(
-        list_s[-1][1], scale) + " scaleW=0 scaleH=0 pages=" + str(len(list_t)) + " packed=0"
+    line = "common lineHeight=" + resize_old(lr2font["#S"][-1]["size"], scale) + " base=" + resize_old(
+        lr2font["#S"][-1]["size"], scale) + " scaleW=0 scaleH=0 pages=" + str(len(lr2font["#T"])) + " packed=0"
     output.append(line)
 
     # THIS IS WHERE THE FUN BEGINS
     # PAGE
-    for item in list_t:
-        line = "page id=" + item[1] + " file=\"" + item[2].replace(".tga", ".png") + "\""
+    for item in lr2font["#T"]:
+        line = "page id=" + item["img"] + " file=\"" + item["file"].replace(".tga", ".png") + "\""
         output.append(line)
 
     # CHAR
-    spacing = int(resize(list_m[-1][1], scale))
-    line = "chars count=" + str(len(list_r))
+    spacing = int(resize_old(lr2font["#M"][-1]["spacing"], scale))
+    line = "chars count=" + str(len(lr2font["#R"]))
     output.append(line)
-    for item in list_r:
-        line = "char id=" + str(convert_glyph_id(int(item[1]))) + " x=" + resize(item[3], scale) + " y=" + resize(item[4], scale) + " width=" + resize(item[5], scale) + " height=" + resize(item[6],scale) + " xoffset=0 yoffset=0 xadvance=" + str(int(resize(item[5], scale)) + spacing) + " page=" + item[2] + " chnl=0"
+    for item in lr2font["#R"]:
+        line = "char id=" + str(convert_glyph_id(int(item["char"]))) + " x=" + resize_old(item["x"], scale) + " y=" + resize_old(item["y"], scale) + " width=" + resize_old(item["w"], scale) + " height=" + resize_old(item["h"], scale) + " xoffset=0 yoffset=0 xadvance=" + str(int(resize_old(item["w"], scale)) + spacing) + " page=" + item["img"] + " chnl=0"
         output.append(line)
 
     output.append("kernings count=0")
