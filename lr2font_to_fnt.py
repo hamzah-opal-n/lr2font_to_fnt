@@ -1,6 +1,5 @@
 import os
 import subprocess
-import argparse
 
 
 def convert_glyph_id(glyph_id):
@@ -17,28 +16,7 @@ def resize(thing, scale):
     return str(thing)
 
 
-def old_main():
-    print("LR2FONT to FNT")
-
-    # USER INPUT
-    while True:
-        receivedInput = input("Enter lr2font filename: ")
-        try:
-            fileName = str(receivedInput)
-        except ValueError:
-            print("Invalid input received.")
-        else:
-            break
-
-    while True:
-        receivedInput = input("Enter scaling factor (decimal): ")
-        try:
-            scale = float(receivedInput)
-        except ValueError:
-            print("Invalid input received.")
-        else:
-            break
-
+def old_converter(fileName, scale):
     # LOAD LR2FONT AND SORT TAGS
     inputFile = open(os.path.expanduser(fileName), "r", errors="ignore")
     listS = []
@@ -100,4 +78,41 @@ def old_main():
         print("ImageMagick not found. You'll have to convert the textures to .png yourself I guess...")
 
 
-old_main()
+def main():
+    print("LR2FONT to FNT")
+    # USER INPUT
+    while True:
+        receivedInput = input("Enter lr2font filename: ")
+        try:
+            fileName = str(receivedInput)
+        except ValueError:
+            print("Invalid input received.")
+        else:
+            break
+
+    while True:
+        receivedInput = input("Enter scaling factor (decimal): ")
+        try:
+            scale = float(receivedInput)
+        except ValueError:
+            print("Invalid input received.")
+        else:
+            break
+
+    old_converter(fileName, scale)
+
+
+def test():
+    filename = "TEST.lr2font"
+    old_converter(filename, 1)
+    with open("SAMPLE.fnt", 'r') as f:
+        sample_file = f.read()
+    with open("TEST.fnt", 'r') as f:
+        test_file = f.read()
+    if sample_file == test_file:
+        print("TEST OK")
+    else:
+        print("TEST FAILED")
+
+
+test()
