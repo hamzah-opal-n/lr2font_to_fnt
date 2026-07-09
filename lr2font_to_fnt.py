@@ -136,11 +136,6 @@ def convert_lr2font_to_fnt(lr2font_filename, scale):
             f.write(line)
             f.write('\n')
 
-    try:
-        subprocess.call(["magick", "mogrify", "-resize", str(scale * 100) + "%", "-format", "png", "*.tga"])
-    except FileNotFoundError:
-        print("ImageMagick not found. You'll have to convert the textures to .png yourself I guess...")
-
 
 def main():
     print("LR2FONT to FNT")
