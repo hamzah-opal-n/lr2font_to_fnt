@@ -1,5 +1,6 @@
 from pathlib import Path
 import subprocess
+import argparse
 
 
 def old_magick_code(scale):
@@ -174,4 +175,11 @@ def test():
 
 
 # test()
-main()
+# main()
+
+if __name__ == "__main__":
+    parser = argparse.ArgumentParser()
+    parser.add_argument("lr2font", help="lr2font filename")
+    parser.add_argument("-s", "--scale", type=float, default=1.0, help="scale factor")
+    args = parser.parse_args()
+    convert_lr2font_to_fnt(args.lr2font, args.scale)
