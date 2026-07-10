@@ -137,46 +137,6 @@ def convert_lr2font_to_fnt(filepath_string, scale):
     write_fnt_file(fnt, lr2font_filepath.with_suffix(".fnt"))
 
 
-def main():
-    print("LR2FONT to FNT")
-    # USER INPUT
-    while True:
-        received_input = input("Enter lr2font filename: ")
-        try:
-            file_name = str(received_input)
-        except ValueError:
-            print("Invalid input received.")
-        else:
-            break
-
-    while True:
-        received_input = input("Enter scaling factor (decimal): ")
-        try:
-            scale = float(received_input)
-        except ValueError:
-            print("Invalid input received.")
-        else:
-            break
-
-    convert_lr2font_to_fnt(file_name, scale)
-
-
-def test():
-    filename = "TEST.lr2font"
-    convert_lr2font_to_fnt(filename, 1)
-    with open("SAMPLE.fnt", 'r') as f:
-        sample_file = f.read()
-    with open("TEST.fnt", 'r') as f:
-        test_file = f.read()
-    if sample_file == test_file:
-        print("TEST OK")
-    else:
-        print("TEST FAILED")
-
-
-# test()
-# main()
-
 if __name__ == "__main__":
     parser = argparse.ArgumentParser()
     parser.add_argument("lr2font", help="lr2font filename")
